@@ -1,0 +1,101 @@
+﻿#include <iostream>
+#include <winsock.h>
+
+using namespace std;
+#pragma comment(lib,"ws2_32.lib")
+
+
+int main()
+{
+    //定义长度变量
+    int send_len = 0;
+    int recv_len = 0;
+    //定义发送缓冲区和接受缓冲区
+    char send_buf[100];
+    char recv_buf[100];
+    char index;
+    string sendBuf;
+    string recvBuf;
+    //定义服务端套接字，接受请求套接字
+    SOCKET s_server;
+    //服务端地址客户端地址
+    SOCKADDR_IN server_addr;
+    string name;
+    cout << "请输入你的昵称" << endl;
+    cin >> name;
+
+    WORD w_req = MAKEWORD(2, 2);
+    WSADATA wsadata;
+    if (WSAStartup(w_req, &wsadata) != 0) 
+    {
+        cout << "初始化套接字库失败！" << endl;
+        WSACleanup();
+    }
+    //填充服务端信息
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.S_un.S_addr = inet_addr("127.0.0.1");
+    server_addr.sin_port = htons(30396);
+    //创建套接字
+    s_server = socket(AF_INET, SOCK_STREAM, 0);
+    if (connect(s_server, (SOCKADDR*)& server_addr, sizeof(SOCKADDR)) == SOCKET_ERROR) {
+        cout << "服务器连接失败！" << endl;
+        WSACleanup();
+    }
+    else {
+        cout << "服务器连接成功！" << endl;
+    }
+
+    recv(s_server, &index, 1, 0);
+    if (index == '0')
+    {
+        //发送数据
+        cout << "请输入发送信息:" << endl;
+
+        while (1) {
+            cout << name + ": ";
+            cin >> sendBuf;
+            sendBuf = name + ": " + sendBuf;
+            send_len = send(s_server, sendBuf.c_str(), 100, 0);
+            if (send_len < 0) {
+                cout << "发送失败！" << endl;
+                break;
+            }
+            recv_len = recv(s_server, recv_buf, 100, 0);
+            if (recv_len < 0) {
+                cout << "接收失败！" << endl;
+                break;
+            }
+            else {
+                cout << recv_buf << endl;
+            }
+        }
+    }
+    else
+    {
+        //接收数据
+        cout << "等待对方信息:" << endl;
+        while (1) {
+            recv_len = recv(s_server, recv_buf, 100, 0);
+            if (recv_len < 0) {
+                cout << "接收失败！" << endl;
+                break;
+            }
+            else {
+                cout << recv_buf << endl;
+            }
+            cout << name + ": ";
+            cin >> sendBuf;
+            sendBuf = name + ": " + sendBuf;
+            send_len = send(s_server, sendBuf.c_str(), 100, 0);
+            if (send_len < 0) {
+                cout << "发送失败！" << endl;
+                break;
+            }
+        }
+    }
+    //关闭套接字
+    closesocket(s_server);
+    //释放DLL资源
+    WSACleanup();
+    return 0;
+}
